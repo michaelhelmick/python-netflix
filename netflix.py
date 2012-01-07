@@ -100,7 +100,7 @@ class NetflixAPI(object):
         """
 
         if not oauth_verifier:
-            raise NetflixAPIError('No OAuth Verifier supplied.')
+            raise NetflixAuthError('No OAuth Verifier supplied.')
 
         params = {
             'oauth_verifier': oauth_verifier,
