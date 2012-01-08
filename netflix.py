@@ -82,7 +82,7 @@ class NetflixAPI(object):
         resp, content = self.client.request('%s?oauth_callback=%s' % (self.request_token_url, self.callback_url), 'GET', **request_args)
         
         if resp['status'] != '200':
-            raise NetflixAuthErrorError('There was a problem retrieving an authentication url.')
+            raise NetflixAuthError('There was a problem retrieving an authentication url.')
 
         request_tokens = dict(parse_qsl(content))
 
@@ -150,7 +150,7 @@ class NetflixAPI(object):
         try:
             content = json.loads(content)
         except json.JSONDecodeError:
-            raise NetflixAPIError('Content unable to be decoded.')
+            raise NetflixAPIError('Content is not valid JSON, unable to be decoded.')
 
         if status < 200 or status >= 300:
             raise NetflixAPIError('Code %d: %s' % (status, content['status']['message']))

@@ -17,7 +17,7 @@ auth_url = auth_props['auth_url']
 #Store this token in a session or something for later use in the next step.
 oauth_token_secret = auth_props['oauth_token_secret']
 
-Connect with Netflix via: % auth_url
+print 'Connect with Netflix via %s' % auth_url
 ```
 
 Once you click "Allow" be sure that there is a URL set up to handle getting finalized tokens and possibly adding them to your database to use their information at a later date. \n\n'
