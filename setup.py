@@ -21,7 +21,7 @@ setup(
     description='A Python Library to interface with Netflix REST API & OAuth',
     long_description=open('README.md').read(),
     classifiers = [
-        'Development Status :: 1 - Beta',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules',
