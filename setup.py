@@ -4,7 +4,7 @@ import sys, os
 from setuptools import setup
 
 __author__ = 'Mike Helmick <mikehelmick@me.com>'
-__version__ = '1.0'
+__version__ = '0.1.0'
 
 setup(
     name='python-netflix',
