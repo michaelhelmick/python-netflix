@@ -6,7 +6,7 @@ For Netflix API documentation, visit: http://developer.netflix.com/docs
 '''
 
 __author__ = 'Mike Helmick <mikehelmick@me.com>'
-__version__ = '1.0'
+__version__ = '0.1.0'
 
 import time
 import urllib
@@ -74,7 +74,7 @@ class NetflixAPI(object):
             # If they don't do authentication, but still want to request unprotected resources, we need an opener.
             self.client = httplib2.Http(**client_args)
 
-    def get_auth_url(self):
+    def get_authentication_tokens(self):
         """ Returns an authorization url to give to your user.
         """
 
