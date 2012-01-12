@@ -2,13 +2,11 @@
 
 import sys, os
 from setuptools import setup
-
-__author__ = 'Mike Helmick <mikehelmick@me.com>'
-__version__ = '0.1.0'
+import netflix
 
 setup(
     name='python-netflix',
-    version=__version__,
+    version=netflix.__version__,
     install_requires=['httplib2', 'oauth2', 'simplejson'],
     author='Mike Helmick',
     author_email='mikehelmick@me.com',
