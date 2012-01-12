@@ -34,7 +34,7 @@ class NetflixAPIError(Exception): pass
 class NetflixAuthError(NetflixAPIError): pass
 
 class NetflixAPI(object):
-    def __init__(self, api_key=None, api_secret=None, oauth_token=None, oauth_token_secret=None, callback_url=None, headers=None, user_id=None, client_args={}):
+    def __init__(self, api_key=None, api_secret=None, oauth_token=None, oauth_token_secret=None, callback_url=None, headers=None, client_args={}):
         if not api_key or not api_secret:
             raise NetflixAPIError('Please supply an api_key and api_secret.')
         
@@ -43,14 +43,12 @@ class NetflixAPI(object):
         self.oauth_token = oauth_token
         self.oauth_token_secret = oauth_token_secret
         self.callback_url = callback_url
-        self.user_id = user_id
 
         self.request_token_url = 'http://api.netflix.com/oauth/request_token'
         self.access_token_url = 'http://api.netflix.com/oauth/access_token'
         self.authorize_url = 'https://api-user.netflix.com/oauth/login'
 
-        self.api_base = 'http://api.netflix.com'
-        self.api_url = '%s/users/%s/' % (self.api_base, self.user_id)
+        self.api_base = 'http://api.netflix.com/'
 
         self.headers = headers
         if self.headers is None:
@@ -75,7 +73,7 @@ class NetflixAPI(object):
             self.client = httplib2.Http(**client_args)
 
     def get_authentication_tokens(self):
-        """ Returns an authorization url to give to your user.
+        """ Returns an authentication tokens, which includes an 'auth_url' for the user to hit.
         """
 
         request_args = {}
@@ -112,16 +110,14 @@ class NetflixAPI(object):
 
         return dict(parse_qsl(content))
 
-    def api_request(self, endpoint=None, method='GET', params={}, format='json'):
+    def api_request(self, endpoint=None, method='GET', params={}, format='json', user=True):
         if endpoint is None:
             raise NetflixAPIError('Please supply an API endpoint.')
 
-        if endpoint.startswith('http://'):
+        if endpoint.startswith(self.api_base):
             url = endpoint
         else:
-            url = self.api_url+endpoint
-
-        print url
+            url = self.api_base+endpoint
 
         if format == 'json':
             params.update({'output':'json'})
@@ -143,7 +139,7 @@ class NetflixAPI(object):
             resp, content = self.client.request(url+'?output=json', method, body=req.to_postdata(), headers=self.headers)
         else:
             resp, content = self.client.request('%s?%s' % (url, urllib.urlencode(params)), 'GET', headers=self.headers)
-        print resp, content
+
         status = int(resp['status'])
             
         #try except for if content is able to be decoded
