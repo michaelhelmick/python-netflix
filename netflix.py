@@ -52,7 +52,7 @@ class NetflixAPI(object):
 
         self.headers = headers
         if self.headers is None:
-            self.headers = {'User-agent': 'Python-Netflix v1.0'}
+            self.headers = {'User-agent': 'Python-Netflix v%s' % __version__}
 
         self.consumer = None
         self.token = None
@@ -123,20 +123,7 @@ class NetflixAPI(object):
             params.update({'output':'json'})
         
         if method != 'GET':
-            oauth_params = {
-                'oauth_version': "1.0",
-                'oauth_nonce': oauth.generate_nonce(),
-                'oauth_timestamp': int(time.time())
-            }
-            params.update(oauth_params)
-
-            req = oauth.Request(method='POST', url=url, parameters=params)
-
-            ## Sign the request.
-            signature_method = oauth.SignatureMethod_HMAC_SHA1()
-            req.sign_request(signature_method, self.consumer, self.token)
-
-            resp, content = self.client.request(url+'?output=json', method, body=req.to_postdata(), headers=self.headers)
+            resp, content = self.client.request(url+'?output=json', method, body=urllib.urlencode(params), headers=self.headers)
         else:
             resp, content = self.client.request('%s?%s' % (url, urllib.urlencode(params)), 'GET', headers=self.headers)
 
