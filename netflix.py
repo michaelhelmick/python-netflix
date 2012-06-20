@@ -1,16 +1,15 @@
-#!/usr/bin/env python
-
 """ Python-Netflix """
 '''
 For Netflix API documentation, visit: http://developer.netflix.com/docs
 '''
 
 __author__ = 'Mike Helmick <mikehelmick@me.com>'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 import urllib
-import httplib2
-import oauth2 as oauth
+
+import requests
+from requests.auth import OAuth1
 
 try:
     from urlparse import parse_qsl
@@ -35,12 +34,12 @@ class NetflixAuthError(NetflixAPIError): pass
 
 class NetflixAPI(object):
     def __init__(self, api_key=None, api_secret=None, oauth_token=None, \
-                oauth_token_secret=None, callback_url=None, headers=None, client_args=None):
+                oauth_token_secret=None, callback_url='', headers=None):
 
-        self.api_key = api_key
-        self.api_secret = api_secret
-        self.oauth_token = oauth_token
-        self.oauth_token_secret = oauth_token_secret
+        self.api_key = api_key and u'%s' % api_key
+        self.api_secret = api_secret and u'%s' % api_secret
+        self.oauth_token = oauth_token and u'%s' % oauth_token
+        self.oauth_token_secret = oauth_token_secret and u'%s' % oauth_token_secret
         self.callback_url = callback_url
 
         self.request_token_url = 'http://api.netflix.com/oauth/request_token'
@@ -50,39 +49,38 @@ class NetflixAPI(object):
         self.old_api_base = 'http://api.netflix.com/'
         self.api_base = 'http://api-public.netflix.com/'
 
-        self.headers = headers or {'User-agent': 'Python-Netflix v%s' % __version__}
+        default_headers = {'User-agent': 'Python-Netflix v%s' % __version__}
+        self.headers = default_headers.update(headers or {})
 
-        self.consumer = None
-        self.token = None
-
-        client_args = client_args or {}
+        self.client = requests.session(headers=self.headers)
+        self.auth = None
 
         if self.api_key is not None and self.api_secret is not None:
-            self.consumer = oauth.Consumer(self.api_key, self.api_secret)
+            self.auth = OAuth1(self.api_key, self.api_secret,
+                               signature_type='auth_header')
 
         if self.oauth_token is not None and self.oauth_token_secret is not None:
-            self.token = oauth.Token(oauth_token, oauth_token_secret)
+            self.auth = OAuth1(self.api_key, self.api_secret,
+                               self.oauth_token, self.oauth_token_secret,
+                               signature_type='auth_header')
 
-        # Filter down through the possibilities here - if they have a token, if they're first stage, etc.
-        if self.consumer is not None and self.token is not None:
-            self.client = oauth.Client(self.consumer, self.token, **client_args)
-        elif self.consumer is not None:
-            self.client = oauth.Client(self.consumer, **client_args)
-        else:
-            # If they don't do authentication, but still want to request unprotected resources, we need an opener.
-            self.client = httplib2.Http(**client_args)
+        if self.auth is not None:
+            self.client = requests.session(headers=self.headers, auth=self.auth)
 
     def get_authentication_tokens(self):
-        """ Returns an authentication tokens, which includes an 'auth_url' for the user to hit.
+        """ Returns an authentication tokens, includes an 'auth_url' for user
         """
 
-        request_args = {}
-        resp, content = self.client.request('%s?oauth_callback=%s' % (self.request_token_url, self.callback_url), 'GET', **request_args)
+        url = self.request_token_url + '?oauth_callback=' + self.callback_url
+        response = self.client.get(url, headers=self.headers, auth=self.auth)
 
-        if resp['status'] != '200':
+        if response.status_code != 200:
             raise NetflixAuthError('There was a problem retrieving an authentication url.')
 
-        request_tokens = dict(parse_qsl(content))
+        try:
+            request_tokens = dict(parse_qsl(response.content))
+        except requests.exceptions.RequestException:
+            raise NetflixAuthError('Unable to obtain auth tokens.')
 
         auth_url_params = {
             'oauth_token': request_tokens['oauth_token'],
@@ -93,38 +91,53 @@ class NetflixAPI(object):
         request_tokens['auth_url'] = '%s?%s' % (self.authorize_url, urllib.urlencode(auth_url_params))
         return request_tokens
 
-    def get_auth_tokens(self, oauth_verifier=None):
+    def get_auth_tokens(self, oauth_verifier):
         """ Returns 'final' tokens to store and used to make authorized calls to Netflix.
         """
 
-        if not oauth_verifier:
-            raise NetflixAuthError('No OAuth Verifier supplied.')
+        url = self.access_token_url + '?oauth_verifier=' + oauth_verifier
 
-        params = {
-            'oauth_verifier': oauth_verifier,
-        }
+        try:
+            response = self.client.get(url, headers=self.headers, auth=self.auth)
+        except requests.exceptions.RequestException:
+            raise NetflixAuthError('An unknown error occurred.')
 
-        resp, content = self.client.request('%s?%s' % (self.access_token_url, urllib.urlencode(params)), 'GET')
-        if resp['status'] != '200':
-            raise NetflixAuthError('Getting access tokens failed: %s Response Status' % resp['status'])
+        if response.status_code != 200:
+            raise NetflixAuthError('Getting access tokens failed: %s Response Status' % response.status_code)
 
-        return dict(parse_qsl(content))
+        try:
+            auth_tokens = dict(parse_qsl(response.content))
+        except AttributeError:
+            raise NetflixAuthError('Unable to obtain auth tokens.')
+
+        return auth_tokens
 
     def api_request(self, endpoint, method='GET', params=None):
-        params = params or {}
-        params.update({'output': 'json'})
+        method = method.lower()
+        if not method in ('get', 'post', 'delete'):
+            raise NetflixAPIError('Method must be of GET, POST or DELETE')
 
         if endpoint.startswith(self.api_base) or endpoint.startswith(self.old_api_base):
             url = endpoint
         else:
             url = self.api_base + endpoint
 
-        if method != 'GET':
-            resp, content = self.client.request('%s?output=json' % url, method, body=urllib.urlencode(params), headers=self.headers)
-        else:
-            resp, content = self.client.request('%s?%s' % (url, urllib.urlencode(params)), 'GET', headers=self.headers)
+        params = params or {}
+        params.update({'output': 'json'})
 
-        status = int(resp['status'])
+        func = getattr(self.client, method)
+        try:
+            if method == 'get':
+                # After requests is patched with https://github.com/kennethreitz/requests/pull/684
+                # we can do func(url, params=params)
+                response = func(url + '?' + urllib.urlencode(params))
+            else:
+                response = func(url, data=params)
+        except requests.exceptions.RequestException:
+            raise NetflixAPIError('An unknown error occurred.')
+
+        status = response.status_code
+        content = response.content
 
         #try except for if content is able to be decoded
         try:
