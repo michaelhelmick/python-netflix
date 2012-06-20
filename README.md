@@ -1,16 +1,16 @@
-#Overview
-I've been writing up APIs interfacing with OAuth in Python like no other the past week or so, so here is another... Netflix API.
+Python-Netflix
+==============
 
-Hope this documentation explains everything you need to get started. Any questions feel free to email me or inbox me.
+`Python-Netflix` is a Python library to help interface with [Netflix REST API](http://developer.netflix.com/docs/REST_API_Reference "Netflix REST API") & OAuth
 
-#Install through pip...
-```
-pip install python-netflix
-```
+Installation
+------------
+``` $ pip install python-netflix```
 
-#Authorization URL
-*Get an authorization url for your user*
+Usage
+-----
 
+###### Authorization URL
 ```python
 n = NetflixAPI(api_key='*your app key*',
                api_secret='*your app secret*',
@@ -25,9 +25,9 @@ oauth_token_secret = auth_props['oauth_token_secret']
 print 'Connect with Netflix via %s' % auth_url
 ```
 
-Once you click "Allow" be sure that there is a URL set up to handle getting finalized tokens and possibly adding them to your database to use their information at a later date. \n\n'
+Once you click "Allow" be sure that there is a URL set up to handle getting finalized tokens and possibly adding them to your database to use their information at a later date.'
 
-#Handling the callback
+###### Handling the callback
 ```python
 # In Django, you'd do something like
 # oauth_token = request.GET.get('oauth_verifier')
@@ -51,32 +51,39 @@ final_user_id = authorized_tokens['user_id']
 # Save those tokens and user_id to the database for a later use?
 ```
 
-#Getting some user information
+###### Return a list of the users Instant Queue.
 ```python
 # Get the final tokens from the database or wherever you have them stored
 
 n = NetflixAPI(api_key = '*your app key*',
                api_secret = '*your app secret*',
                oauth_token=final_tokens['oauth_token'],
-               oauth_token_secret=final_tokens['oauth_token_secret'],
-               user_id=final_tokens['user_id'])
+               oauth_token_secret=final_tokens['oauth_token_secret'])
 
-# Return a list of the users Instant Queue.
-instant_queue = n.get('queues/instant')
+
+instant_queue = n.get('users/*final_user_id*/queues/instant')
 print instant_queue
+```
 
-# Add Gabriel Iglesias: Hot and Fluffy to Instant Queue
-add_to_queue = n.post('queues/instant', params={'title_ref': 'http://api.netflix.com/catalog/titles/movies/70072945'}) #You can also added "position" to the params to set where this media will be positioned on the users queue.
+###### Add Gabriel Iglesias: Hot and Fluffy to Instant Queue
+```python
+try:
+    add_to_queue = n.post('users/*final_user_id*/queues/instant', params={'title_ref': 'http://api.netflix.com/catalog/titles/movies/70072945'})
 
-#This returns the added item if successful.
-# If it's already in the queue, it will return a NetflixAPIError, code 412
-print add_to_queue
+    print add_to_queue
 
-# Remove Gabriel Iglesias: Hot and Fluffy to Instant Queue
-## When querying for the users Queue, when iterating over the Queue items
-## you can use the 'id' for the next call. Where it says *CURRENT_USER_ID*
-## that is automatically returned from the Netflix Instant Queue response.
-del_from_queue = n.delete('http://api.netflix.com/users/*CURRENT_USER_ID*/queues/instant/available/2/70072945')
+    # You can also added "position" to the params to set where this media will be positioned on the users queue.
+except NetflixAPIError:
+    # This returns the added item if successful.
+    # If it's already in the queue, it will return a NetflixAPIError, code 412
+```
+
+###### Remove Gabriel Iglesias: Hot and Fluffy to Instant Queue
+```python
+# When querying for the users Queue, when iterating over the Queue items
+# you can use the 'id' for the next call. Where it says *final_user_id*
+# that is automatically returned from the Netflix Instant Queue response.
+del_from_queue = n.delete('http://api-public.netflix.com/users/*final_user_id*/queues/instant/available/2/70072945')
 
 print del_from_queue
 ```

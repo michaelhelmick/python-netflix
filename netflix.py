@@ -6,7 +6,7 @@ For Netflix API documentation, visit: http://developer.netflix.com/docs
 '''
 
 __author__ = 'Mike Helmick <mikehelmick@me.com>'
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 import urllib
 import httplib2
@@ -34,9 +34,8 @@ class NetflixAuthError(NetflixAPIError): pass
 
 
 class NetflixAPI(object):
-    def __init__(self, api_key=None, api_secret=None, oauth_token=None, oauth_token_secret=None, callback_url=None, headers=None, client_args=None):
-        if not api_key or not api_secret:
-            raise NetflixAPIError('Please supply an api_key and api_secret.')
+    def __init__(self, api_key=None, api_secret=None, oauth_token=None, \
+                oauth_token_secret=None, callback_url=None, headers=None, client_args=None):
 
         self.api_key = api_key
         self.api_secret = api_secret
@@ -48,11 +47,10 @@ class NetflixAPI(object):
         self.access_token_url = 'http://api.netflix.com/oauth/access_token'
         self.authorize_url = 'https://api-user.netflix.com/oauth/login'
 
-        self.api_base = 'http://api.netflix.com/'
+        self.old_api_base = 'http://api.netflix.com/'
+        self.api_base = 'http://api-public.netflix.com/'
 
-        self.headers = headers
-        if self.headers is None:
-            self.headers = {'User-agent': 'Python-Netflix v%s' % __version__}
+        self.headers = headers or {'User-agent': 'Python-Netflix v%s' % __version__}
 
         self.consumer = None
         self.token = None
@@ -112,17 +110,14 @@ class NetflixAPI(object):
 
         return dict(parse_qsl(content))
 
-    def api_request(self, endpoint=None, method='GET', params=None, format='json', user=True):
-        if endpoint is None:
-            raise NetflixAPIError('Please supply an API endpoint.')
+    def api_request(self, endpoint, method='GET', params=None):
+        params = params or {}
+        params.update({'output': 'json'})
 
-        if endpoint.startswith(self.api_base):
+        if endpoint.startswith(self.api_base) or endpoint.startswith(self.old_api_base):
             url = endpoint
         else:
             url = self.api_base + endpoint
-
-        if format == 'json':
-            params.update({'output': 'json'})
 
         if method != 'GET':
             resp, content = self.client.request('%s?output=json' % url, method, body=urllib.urlencode(params), headers=self.headers)
@@ -134,7 +129,7 @@ class NetflixAPI(object):
         #try except for if content is able to be decoded
         try:
             content = json.loads(content)
-        except json.JSONDecodeError:
+        except ValueError:
             raise NetflixAPIError('Content is not valid JSON, unable to be decoded.')
 
         if status < 200 or status >= 300:
@@ -142,14 +137,11 @@ class NetflixAPI(object):
 
         return dict(content)
 
-    def get(self, endpoint=None, params=None):
-        params = params or {}
+    def get(self, endpoint, params=None):
         return self.api_request(endpoint, params=params)
 
-    def post(self, endpoint=None, params=None):
-        params = params or {}
+    def post(self, endpoint, params=None):
         return self.api_request(endpoint, method='POST', params=params)
 
-    def delete(self, endpoint=None, params=None):
-        params = params or {}
+    def delete(self, endpoint, params=None):
         return self.api_request(endpoint, method='DELETE', params=params)

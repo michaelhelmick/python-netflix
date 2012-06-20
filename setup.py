@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='python-netflix',
-    version='0.1.1',
+    version='0.2.0',
     install_requires=['httplib2', 'oauth2', 'simplejson'],
     author='Mike Helmick',
     author_email='mikehelmick@me.com',
@@ -12,7 +12,7 @@ setup(
     url='https://github.com/michaelhelmick/python-netflix/',
     keywords='python netflix oauth api',
     description='A Python Library to interface with Netflix REST API & OAuth',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     download_url="https://github.com/michaelhelmick/python-netflix/zipball/master",
     py_modules=["netflix"],
     classifiers=[
