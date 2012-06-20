@@ -4,8 +4,8 @@ from setuptools import setup
 
 setup(
     name='python-netflix',
-    version='0.2.0',
-    install_requires=['httplib2', 'oauth2', 'simplejson'],
+    version='0.3.0',
+    install_requires=['requests>=0.13.0', 'simplejson'],
     author='Mike Helmick',
     author_email='mikehelmick@me.com',
     license='MIT License',
