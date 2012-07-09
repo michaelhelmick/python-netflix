@@ -114,8 +114,8 @@ class NetflixAPI(object):
 
     def api_request(self, endpoint, method='GET', params=None):
         method = method.lower()
-        if not method in ('get', 'post', 'delete'):
-            raise NetflixAPIError('Method must be of GET, POST or DELETE')
+        if not method in ('get', 'put', 'post', 'delete'):
+            raise NetflixAPIError('Method must be of GET, PUT, POST or DELETE')
 
         if endpoint.startswith(self.api_base) or endpoint.startswith(self.old_api_base):
             url = endpoint
@@ -124,6 +124,10 @@ class NetflixAPI(object):
 
         params = params or {}
         params.update({'output': 'json'})
+
+        if method == 'put':
+            params.update({'method': 'PUT'})
+            method = 'post'
 
         func = getattr(self.client, method)
         try:
@@ -152,6 +156,9 @@ class NetflixAPI(object):
 
     def get(self, endpoint, params=None):
         return self.api_request(endpoint, params=params)
+
+    def put(self, endpoint, params=None):
+        return self.api_request(endpoint, method='PUT', params=params)
 
     def post(self, endpoint, params=None):
         return self.api_request(endpoint, method='POST', params=params)
