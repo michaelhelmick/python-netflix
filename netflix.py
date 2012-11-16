@@ -42,8 +42,8 @@ class NetflixAPI(object):
         self.oauth_token_secret = oauth_token_secret and u'%s' % oauth_token_secret
         self.callback_url = callback_url
 
-        self.request_token_url = 'http://api.netflix.com/oauth/request_token'
-        self.access_token_url = 'http://api.netflix.com/oauth/access_token'
+        self.request_token_url = 'http://api-public.netflix.com/oauth/request_token'
+        self.access_token_url = 'http://api-public.netflix.com/oauth/access_token'
         self.authorize_url = 'https://api-user.netflix.com/oauth/login'
 
         self.old_api_base = 'http://api.netflix.com/'
