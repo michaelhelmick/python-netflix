@@ -7,7 +7,7 @@ setup(
     version='0.3.0',
     install_requires=['requests>=0.13.0', 'simplejson'],
     author='Mike Helmick',
-    author_email='mikehelmick@me.com',
+    author_email='me@michaelhelmick.com',
     license='MIT License',
     url='https://github.com/michaelhelmick/python-netflix/',
     keywords='python netflix oauth api',
